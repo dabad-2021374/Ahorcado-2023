@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego ahorcado</title>
+
+    <head>
+        <title>Juego de Ahorcado</title>
+        <style>
+            body {
+                text-align: center;
+            }
+
+            h1 {
+                font-family: Arial, Helvetica, sans-serif;
+            }
+
+            h2 {
+                font-family: Arial, Helvetica, sans-serif;
+            }
+
+            #contenido {
+                background-color: rgb(212, 240, 160);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 98vh;
+            }
+
+            #ahorcado {
+                font-size: 30px;
+            }
+
+            #intentos {
+                font-size: 24px;
+                margin: 20px;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+
+            canvas {
+                border: 1px solid black;
+            }
+
+            .alerta {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: rgb(154, 255, 247);
+                padding: 20px;
+                border: 1px solid #ccc;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+                font-size: 24px; 
+            }
+
+            .teclado-button {
+                font-size: 18px;
+                padding: 10px 20px;
+                margin: 5px;
+                text-align: center;
+                border: none;
+                background-color: beige;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+
+            .teclado-button:active {
+                background-color: #47f5d2;
+                color: #fff;
+                border: 2px solid #47f5d2;
+                outline: none;
+            }
+
+            #teclado {
+                display: grid;
+                grid-template-columns: repeat(9, 1fr);
+                grid-gap: 5px;
+                margin-top: 10px;
+            }
+
+            #dibujoAhorcado-canvas {
+                display: block;
+                margin: 0 auto;
+                border: none;
+                justify-content: center;
+            }
+
+            #palabra {
+                font-size: 40px;
+                letter-spacing: 10px;
+                margin: 20px;
+            }
+        </style>
+    </head>
+
+<body>
+    <div id="contenido">
+        <center>
+            <h1>Juego ahorcado</h1>
+            <h2>Denis Sebastian Abad Santos</h2>
+            <div id="ahorcado"> </div>
+            <div id="palabra"> </div>
+            <div id="intentos">Vidas: 7</div>
+            <canvas id="dibujoAhorcado-canvas" width="300" height="300"></canvas>
+            <div id="teclado"></div>
+        </center>
+    </div>
+    <script>
+        //Palabras
+        var palabras = ["oso", "laptop", "automovil", "carro", "motocicleta", "mouse", "perro", "botella", "computadora", "clase", "spiderman"];
+
+        // Seleccionar una palabra aleatoria
+        var palabraSeleccionada = palabras[Math.floor(Math.random() * palabras.length)];
+        var palabraAdivinada = Array(palabraSeleccionada.length).fill("_");
+        var intentosRestantes = 7;
+        var partesCuerpoDibujadas = 0;
+        var letrasUsadas = [];
+
+        // Configuración de canvas 
+        var canvas = document.getElementById("dibujoAhorcado-canvas");
+        var context = canvas.getContext("2d");
+        var canvasWidth = canvas.width;
+        var canvasHeight = canvas.height;
+
+        function actualizarPalabraAdivinada() {
+            document.getElementById("palabra").innerHTML = palabraAdivinada.join(" ");
+        }
+
+        function actualizarTeclado() {
+            var teclado = document.getElementById("teclado");
+            teclado.innerHTML = "";
+            for (var letra = 97; letra <= 122; letra++) {
+                var letraChar = String.fromCharCode(letra);
+                if (letrasUsadas.indexOf(letraChar) === -1) {
+                    var boton = document.createElement("button");
+                    boton.classList.add("teclado-button");
+                    boton.innerHTML = letraChar;
+                    boton.addEventListener("click", function () {
+                        verificarLetra(this.innerHTML);
+                        this.disabled = true;
+                    });
+                    teclado.appendChild(boton);
+                }
+            }
+        }
+
+        function verificarLetra(letra) {
+            if (palabraSeleccionada.indexOf(letra) !== -1) {
+                for (var i = 0; i < palabraSeleccionada.length; i++) {
+                    if (palabraSeleccionada[i] === letra) {
+                        palabraAdivinada[i] = letra;
+                    }
+                }
+                actualizarPalabraAdivinada();
+            } else {
+                intentosRestantes--;
+                partesCuerpoDibujadas++;
+                actualizarIntentosRestantes();
+                dibujarAhorcado(partesCuerpoDibujadas);
+
+                if (partesCuerpoDibujadas === 7) {
+                    var mensaje = "Perdiste:( La palabra correcta era: " + palabraSeleccionada;
+                    var alertaPerdida = document.createElement("div");
+                    alertaPerdida.innerHTML = mensaje;
+                    alertaPerdida.classList.add("alerta");
+                    document.body.appendChild(alertaPerdida);
+
+                    setTimeout(function () {
+                        //tiempo de la alerta
+                        alertaPerdida.remove();
+                        reiniciarJuego();
+                    }, 3000);
+                }
+            }
+            letrasUsadas.push(letra);
+            if (palabraAdivinada.join("") === palabraSeleccionada) {
+                var mensaje = "Felicidades adivinaste la palabra! :)";
+                var alerta = document.createElement("div");
+                alerta.innerHTML = mensaje;
+                alerta.classList.add("alerta");
+                document.body.appendChild(alerta);
+
+                setTimeout(function () {
+                    //tiempo de la alerta
+                    alerta.remove();
+                    reiniciarJuego();
+                }, 3000); //
+            }
+        }
+
+        function dibujarAhorcado(partesCuerpoDibujadas) {
+            context.clearRect(0, 0, canvasWidth, canvasHeight);
+            context.lineWidth = 4;
+
+            if (partesCuerpoDibujadas >= 1) {
+                //Palo vertical
+                context.beginPath();
+                context.moveTo(20, canvasHeight - 20);
+                context.lineTo(20, 20);
+                context.stroke();
+            }
+
+            if (partesCuerpoDibujadas >= 2) {
+                //Palo horizontal
+                context.beginPath();
+                context.moveTo(20, 20);
+                context.lineTo(100, 20);
+                context.stroke();
+            }
+
+            if (partesCuerpoDibujadas >= 3) {
+                //Cuerda
+                context.beginPath();
+                context.moveTo(100, 20);
+                context.lineTo(100, 50);
+                context.stroke();
+            }
+
+            if (partesCuerpoDibujadas >= 4) {
+                //Cabeza
+                context.beginPath();
+                context.arc(100, 80, 30, 0, Math.PI * 2);
+                context.stroke();
+            }
+
+            if (partesCuerpoDibujadas >= 5) {
+                //Cuerpo
+                context.beginPath();
+                context.moveTo(100, 110);
+                context.lineTo(100, 180);
+                context.stroke();
+            }
+
+            if (partesCuerpoDibujadas >= 6) {
+                //Brazos
+                context.beginPath();
+                context.moveTo(100, 130);
+                context.lineTo(80, 150);
+                context.stroke();
+
+                context.beginPath();
+                context.moveTo(100, 130);
+                context.lineTo(120, 150);
+                context.stroke();
+            }
+
+            if (partesCuerpoDibujadas === 7) {
+                //Piernas
+                context.beginPath();
+                context.moveTo(100, 180);
+                context.lineTo(80, 220);
+                context.stroke();
+
+                context.beginPath();
+                context.moveTo(100, 180);
+                context.lineTo(120, 220);
+                context.stroke();
+            }
+        }
+
+        function actualizarIntentosRestantes() {
+            document.getElementById("intentos").innerHTML = "Vidas: " + intentosRestantes;
+        }
+
+        function reiniciarJuego() {
+            palabraSeleccionada = palabras[Math.floor(Math.random() * palabras.length)];
+            palabraAdivinada = Array(palabraSeleccionada.length).fill("_");
+            intentosRestantes = 7;
+            partesCuerpoDibujadas = 0;
+            letrasUsadas = [];
+
+            //limpiar dibuja
+            context.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            actualizarPalabraAdivinada();
+            actualizarTeclado();
+            actualizarIntentosRestantes();
+        }
+
+        actualizarPalabraAdivinada();
+        actualizarTeclado();
+        actualizarIntentosRestantes();
+    </script>
+</body>
+
+</html>
